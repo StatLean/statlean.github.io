@@ -58,7 +58,10 @@ jobs:
       - name: Determine whether Lean docs need (re)building
         id: need
         run: |
-          if [ -d "site/docs" ] && [ "$(ls -A site/docs 2>/dev/null)" ]; then
+          # Rebuild whenever the exact docs cache key missed (i.e. lean-toolchain,
+          # lakefile.lean, or lake-manifest.json changed). A restore-keys hit only
+          # brings back stale docs, so `site/docs` being non-empty is not enough.
+          if [ "${{ steps.docs-cache.outputs.cache-hit }}" = "true" ]; then
             echo "build_lean=false" >> "$GITHUB_OUTPUT"
           else
             echo "build_lean=true" >> "$GITHUB_OUTPUT"
@@ -94,7 +97,7 @@ jobs:
       - name: Build documentation
         if: steps.need.outputs.build_lean == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: src
-        run: lake -Kenv=dev build AsymptoticStatistics:docs
+        run: lake -Kenv=dev build StatLean:docs
 
       - name: Generate dependency graphs
         if: steps.need.outputs.build_lean == 'true' || github.event_name == 'workflow_dispatch'
@@ -133,7 +136,7 @@ jobs:
             <head>
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
-              <title>Asymptotic Statistical Theory in Lean 4</title>
+              <title>Statistical Theory in Lean 4</title>
               <meta http-equiv="refresh" content="0; url=./website/">
               <link rel="canonical" href="./website/">
               <style>
@@ -146,7 +149,7 @@ jobs:
               </style>
             </head>
             <body>
-              <h1>Asymptotic Statistical Theory in Lean 4</h1>
+              <h1>Statistical Theory in Lean 4</h1>
               <p class="muted">Redirecting to the Stat-Lean website&hellip;</p>
               <p>
                 <a class="btn" href="./website/">Open the website &rarr;</a>
