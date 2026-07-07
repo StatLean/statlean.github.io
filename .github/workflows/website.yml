@@ -39,7 +39,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: site/docs
-          key: site-docs-${{ hashFiles('src/lean-toolchain', 'src/lakefile.lean', 'src/lake-manifest.json') }}
+          key: site-docs-${{ hashFiles('src/lean-toolchain', 'src/lakefile.lean', 'src/lake-manifest.json', 'src/StatLean.lean', 'src/StatLean/**/*.lean') }}
           restore-keys: site-docs-
 
       - name: Set up Node
