@@ -8,8 +8,15 @@ name: Build and deploy StatLean site
 #   https://statlean.github.io/docs/      doc-gen4 API reference
 
 on:
-  # Manual trigger (use this for the first deploy / forced rebuilds).
+  # Manual trigger. By default this reuses the cached doc-gen4 output when the
+  # Lean sources are unchanged, so a website-only change deploys in minutes;
+  # set rebuild_docs to force the full Lean + doc-gen4 rebuild.
   workflow_dispatch:
+    inputs:
+      rebuild_docs:
+        description: "Rebuild the Lean API docs even if the docs cache is valid"
+        type: boolean
+        default: false
   # Rebuild when the deploy workflow itself changes.
   push:
     branches: [main]
@@ -69,38 +76,38 @@ jobs:
 
       # ── Lean steps: only when docs cache is empty or manually triggered ──
       - name: Install elan
-        if: steps.need.outputs.build_lean == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.need.outputs.build_lean == 'true' || inputs.rebuild_docs
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
       - name: Show Lean version
-        if: steps.need.outputs.build_lean == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.need.outputs.build_lean == 'true' || inputs.rebuild_docs
         working-directory: src
         run: lean --version
 
       - name: Update Lake dependencies (fetch doc-gen4)
-        if: steps.need.outputs.build_lean == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.need.outputs.build_lean == 'true' || inputs.rebuild_docs
         working-directory: src
         run: lake -Kenv=dev update
 
       - name: Fetch Mathlib cache
-        if: steps.need.outputs.build_lean == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.need.outputs.build_lean == 'true' || inputs.rebuild_docs
         working-directory: src
         run: lake exe cache get || true
 
       - name: Build project
-        if: steps.need.outputs.build_lean == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.need.outputs.build_lean == 'true' || inputs.rebuild_docs
         working-directory: src
         run: lake build
 
       - name: Build documentation
-        if: steps.need.outputs.build_lean == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.need.outputs.build_lean == 'true' || inputs.rebuild_docs
         working-directory: src
         run: lake -Kenv=dev build StatLean:docs
 
       - name: Generate dependency graphs
-        if: steps.need.outputs.build_lean == 'true' || github.event_name == 'workflow_dispatch'
+        if: steps.need.outputs.build_lean == 'true' || inputs.rebuild_docs
         working-directory: src
         run: lake exe deps || echo "deps extraction failed; site will fall back to doc-gen4 links"
       # ────────────────────────────────────────────────────────────────────
