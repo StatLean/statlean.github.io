@@ -75,6 +75,14 @@ jobs:
           fi
 
       # ── Lean steps: only when docs cache is empty or manually triggered ──
+      # Lake's address space holds anonymous mappings of tens of GB that are mostly untouched.
+      # On ubuntu-26.04 runners the default overcommit heuristic refuses Lake's fork() of
+      # subprocesses (git, for doc-gen4's source links) because such a mapping exceeds RAM + swap,
+      # although the build uses under 5 GB. Mode 1 skips that check.
+      - name: Allow memory overcommit
+        if: steps.need.outputs.build_lean == 'true' || inputs.rebuild_docs
+        run: sudo sysctl -w vm.overcommit_memory=1
+
       - name: Install elan
         if: steps.need.outputs.build_lean == 'true' || inputs.rebuild_docs
         run: |
